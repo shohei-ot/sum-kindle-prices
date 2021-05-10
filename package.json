@@ -1,0 +1,54 @@
+{
+  "name": "sum-kindle-prices",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.ts",
+  "bin": "bin/index.js",
+  "scripts": {
+    "build": "webpack"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.ts": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "*.js": [
+      "prettier --write"
+    ],
+    "*.json": [
+      "prettier --write"
+    ]
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/cli-progress": "^3.9.1",
+    "@types/node": "^15.0.2",
+    "@types/puppeteer": "^5.4.3",
+    "@typescript-eslint/eslint-plugin": "^4.22.1",
+    "@typescript-eslint/parser": "^4.22.1",
+    "eslint": "^7.25.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^3.4.0",
+    "husky": "^6.0.0",
+    "lint-staged": "^10.5.4",
+    "prettier": "^2.2.1",
+    "ts-loader": "^9.1.2",
+    "typescript": "^4.2.4",
+    "webpack": "^5.36.2",
+    "webpack-cli": "^4.7.0"
+  },
+  "dependencies": {
+    "cli-progress": "^3.9.0",
+    "cli-table3": "^0.6.0",
+    "commander": "^7.2.0",
+    "dotenv": "^9.0.0",
+    "puppeteer": "^9.1.1"
+  }
+}
