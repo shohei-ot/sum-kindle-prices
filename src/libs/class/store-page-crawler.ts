@@ -1,4 +1,5 @@
 import * as pp from 'puppeteer';
+import { Page } from 'puppeteer';
 import { KindleStorePageInfo } from '../interface/kindle-store-page-info';
 import { kindlePriceParser } from '../parser/kindle-price-parser';
 // import { youPayValueParser } from '../parser/you-pay-value-parser';
@@ -28,41 +29,24 @@ class StorePageCrawler {
       errors.push(e);
     }
 
-    // let youPayPriceRaw = null;
-    // try {
-    //   youPayPriceRaw = await this.getYouPayPriceRaw();
-    // } catch (e) {
-    //   errors.push(e);
-    // }
-
     return {
       url: this.page.url(),
       productTitle: prodTitle,
       kindlePriceRaw,
       kindlePrice: kindlePriceRaw ? kindlePriceParser(kindlePriceRaw) : null,
-      // youPayPriceRaw,
-      // youPayPrice: youPayPriceRaw ? youPayValueParser(youPayPriceRaw) : null,
       errors: errors.length > 0 ? errors : undefined,
     };
   }
 
   private async getProductTitle(): Promise<string | null> {
-    // const selector = env('PRODUCT_TITLE_SELECTOR');
     const selector = '#productTitle';
     return this.getInnerText(selector);
   }
 
   private async getKindlePriceRaw(): Promise<string | null> {
-    // const selector = env('KINDLE_PRICE_SELECTOR');
     const selector = '#kindle-price';
     return this.getInnerText(selector);
   }
-
-  // private async getYouPayPriceRaw(): Promise<string | null> {
-  //   // const selector = env('YOU_PAY_VALUE_SELECTOR');
-  //   const selector = '#youPayValue';
-  //   return this.getInnerText(selector);
-  // }
 
   private async getInnerText(selector: string): Promise<string | null> {
     const elHandler: pp.ElementHandle<HTMLElement> | null = await this.page.$(
@@ -83,27 +67,53 @@ class StorePageCrawler {
   }
 
   public async getSeriesUrlList(): Promise<string[]> {
-    // const widgetElHandler: pp.ElementHandle<HTMLElement> | null = await this.page.$(
-    //   '#SeriesWidgetButtonWrapper'
-    // );
-    // if (widgetElHandler === null) {
-    //   throw new Error('#widgetElHandler が存在しない');
-    // }
+    const baseUrl = await this.page.evaluate(() => {
+      return window.location.protocol + window.location.host;
+    });
     let widgetBtnWrapper = await this.getWidgetButtonWrapper();
     const maxNum = await this.getCarouselPageMaxNum(widgetBtnWrapper);
-    // const currentNum = await this.getCarouselPageCurrentNum(widgetBtnWrapper);
-    let currentNum = 0;
-    const urlList: string[] = [];
-    // FIXME: while って await 効く？
+    console.log({ maxNum });
+    let currentNum = await this.getCarouselPageCurrentNum(widgetBtnWrapper);
+    currentNum -= 1;
+    if (currentNum !== 0) {
+      this.backToCarousel1stPage();
+    }
+    const uriList: string[] = [];
+
+    // wait widget
+    await this.page.waitForSelector(
+      '#SeriesWidgetButtonWrapper ol[aria-busy="false"]'
+    );
+
+    // await this.page.screenshot({
+    //   fullPage: true,
+    //   path: 'sum-kindle-prices_test.png',
+    // });
+
     while (currentNum < maxNum) {
       widgetBtnWrapper = await this.getWidgetButtonWrapper();
       const currentPageSeriesUrlList = await this.getUrlListFromWidgetPage(
         widgetBtnWrapper
       );
-      urlList.push(...currentPageSeriesUrlList);
+      uriList.push(...currentPageSeriesUrlList);
+      currentNum = await this.getCarouselPageCurrentNum(widgetBtnWrapper);
+      console.log({ currentNum, maxNum });
+      if (currentNum < maxNum) {
+        await this.clickGotoNextButton();
+      }
+    }
+    const complementedUrllist = uriList.map((u) => `${baseUrl}${u}`);
+    return complementedUrllist;
+  }
+
+  private async backToCarousel1stPage() {
+    let widgetBtnWrapper = await this.getWidgetButtonWrapper();
+    let currentNum = await this.getCarouselPageCurrentNum(widgetBtnWrapper);
+    while (currentNum > 1) {
+      widgetBtnWrapper = await this.getWidgetButtonWrapper();
+      await this.clickGotoPrevButton();
       currentNum = await this.getCarouselPageCurrentNum(widgetBtnWrapper);
     }
-    return urlList;
   }
 
   private async getWidgetButtonWrapper() {
@@ -133,6 +143,28 @@ class StorePageCrawler {
     return validUrlList;
   }
 
+  private async clickGotoPrevButton() {
+    const selector = '#SeriesWidgetButtonWrapper .a-carousel-goto-prevpage';
+    await this.page.waitForSelector(
+      '#SeriesWidgetButtonWrapper ol[aria-busy="false"]'
+    );
+    await this.page.click(selector);
+    await this.page.waitForSelector(
+      '#SeriesWidgetButtonWrapper ol[aria-busy="false"]'
+    );
+  }
+
+  private async clickGotoNextButton() {
+    const selector = '#SeriesWidgetButtonWrapper .a-carousel-goto-nextpage';
+    await this.page.waitForSelector(
+      '#SeriesWidgetButtonWrapper ol[aria-busy="false"]'
+    );
+    await this.page.click(selector);
+    await this.page.waitForSelector(
+      '#SeriesWidgetButtonWrapper ol[aria-busy="false"]'
+    );
+  }
+
   private async getCarouselPageMaxNum(
     widgetButtonWrapperEl: pp.ElementHandle<HTMLElement>
   ): Promise<number> {
@@ -144,6 +176,7 @@ class StorePageCrawler {
     const maxNumStr = await pageMaxEl
       .evaluate((el) => el.innerHTML as string)
       .then((str) => str.trim());
+    console.log({ maxNumStr });
     const maxNum = parseInt(maxNumStr, 10);
     if (Number.isNaN(maxNum)) {
       throw new Error('番号を取得できない: ' + maxNumStr);

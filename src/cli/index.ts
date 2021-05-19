@@ -2,10 +2,16 @@ import * as CliProgress from 'cli-progress';
 import { KindleStoreBrowser } from '../libs/class/kindle-store-browser';
 import { KindleStorePageInfo } from '../libs/interface/kindle-store-page-info';
 
+interface ICliOption {
+  crawlSeriesUrls: boolean;
+}
+
 class Cli {
   private browser: KindleStoreBrowser;
+  private option: Partial<ICliOption>;
 
-  constructor() {
+  constructor(option: Partial<ICliOption> = {}) {
+    this.option = option;
     this.browser = new KindleStoreBrowser();
   }
 
@@ -32,8 +38,28 @@ class Cli {
     // const processsor = async (self: Cli, urlList: string[]) => {};
 
     const iteratePromises = async function* (self: Cli, urlList: string[]) {
-      // TODO: 同時に3ページくらい処理したい
-      for (const urlStr of urlList) {
+      // const crawlUrlList: string[] = [];
+
+      // if (self.option.crawlSeriesUrls) {
+      //   for await (const urlStr of urlList) {
+      //     const existSeries = self.browser.existSeries(urlStr);
+      //     if (existSeries) {
+      //       const seriesUrlList = await self.browser.getSeriesUrlList(urlStr);
+      //       crawlUrlList.push(...seriesUrlList);
+      //     } else {
+      //       crawlUrlList.push(urlStr);
+      //     }
+      //   }
+      // } else {
+      //   crawlUrlList.push(...urlList);
+      // }
+
+      // progBar.setTotal(crawlUrlList.length);
+
+      // for await (const urlStr of crawlUrlList) {
+      //   yield self.browser.getPageInfo(urlStr);
+      // }
+      for await (const urlStr of urlList) {
         yield self.browser.getPageInfo(urlStr);
       }
     };

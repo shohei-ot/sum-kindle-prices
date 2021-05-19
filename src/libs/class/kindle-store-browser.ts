@@ -20,10 +20,33 @@ class KindleStoreBrowser {
     pp.Page
   >();
 
+  public async existSeries(storeUrl: KindleStoreUrl): Promise<boolean> {
+    const page = await this.load(storeUrl);
+    if (typeof page === 'undefined') {
+      throw new Error('予期しない undefined な Puppeteer page');
+    }
+
+    const crawler = new StorePageCrawler(page);
+    const existSeries = await crawler.existSeries();
+    await page.close();
+    return existSeries;
+  }
+
+  public async getSeriesUrlList(storeUrl: KindleStoreUrl): Promise<string[]> {
+    const page = await this.load(storeUrl);
+    if (typeof page === 'undefined') {
+      throw new Error('予期しない undefined な Puppeteer page');
+    }
+
+    const crawler = new StorePageCrawler(page);
+    const urlList = await crawler.getSeriesUrlList();
+    await page.close();
+    return urlList;
+  }
+
   public async getPageInfo(
     storeUrl: KindleStoreUrl
   ): Promise<KindleStorePageInfo> {
-    // console.log('KindleStoreBrowser.getPageInfo');
     const page = await this.load(storeUrl);
     if (typeof page === 'undefined') {
       throw new Error('予期しない undefined な Puppeteer page');
@@ -31,24 +54,24 @@ class KindleStoreBrowser {
 
     const crawler = new StorePageCrawler(page);
     const res = await crawler.makePageInfo();
-    page.close();
+    await page.close();
     return res;
   }
 
   private async load(storeUrl: KindleStoreUrl) {
     // console.log('KindleStoreBrowser.load');
-    if (typeof this.urlPageMap.get(storeUrl) === 'undefined') {
-      const browser = await this.getBrowser();
-      const pageTmp = await browser.newPage();
-      this.urlPageMap.set(storeUrl, pageTmp);
-    }
-    const page = this.urlPageMap.get(storeUrl);
+    // if (typeof this.urlPageMap.get(storeUrl) === 'undefined') {
+    const browser = await this.getBrowser();
+    const pageTmp = await browser.newPage();
+    // this.urlPageMap.set(storeUrl, pageTmp);
+    // }
+    const page = pageTmp;
     if (typeof page === 'undefined')
       throw new Error('予期しない undefined page');
 
     // const res = await page.goto(storeUrl, { waitUntil: 'networkidle2' });
     const res = await page.goto(storeUrl, {
-      waitUntil: 'domcontentloaded',
+      waitUntil: 'networkidle2',
       timeout: 10000,
     });
     // console.warn(res);

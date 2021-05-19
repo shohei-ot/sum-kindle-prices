@@ -15,15 +15,18 @@ program.version(packageObj.version);
 
 program
   .option('-s, --separator <separator>', 'separator char', ',')
+  // .option('-c, --crawlSeriesUrls', 'crawling book series urls', false)
   .arguments('<urlList>')
   .description('てすと。。', {
-    urlList: 'comma separated url list',
+    urlList:
+      "comma separated url list (e.g. 'https://...,https://...,https://...')",
   })
   .action(async (urlList: string, options) => {
     // console.warn('options', options);
     try {
       const urls = urlList.split(options.separator).filter(Boolean);
-      const cli = new Cli();
+      const crawlSeriesUrls = options.crawlSeriesUrls;
+      const cli = new Cli({ crawlSeriesUrls });
       const infoList = await cli.getEachPageInfo(urls);
 
       // console.log('全情報取得成功', infoList);
