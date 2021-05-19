@@ -17,10 +17,13 @@ program
   .option('-s, --separator <separator>', 'separator char', ',')
   // .option('-c, --crawlSeriesUrls', 'crawling book series urls', false)
   .arguments('<urlList>')
-  .description('てすと。。', {
-    urlList:
-      "comma separated url list (e.g. 'https://...,https://...,https://...')",
-  })
+  .description(
+    'Kindle ストアページの URL を複数指定して金額を合算します。Amazonポイントは考慮しません。',
+    {
+      urlList:
+        "comma separated url list (e.g. 'https://...,https://...,https://...')",
+    }
+  )
   .action(async (urlList: string, options) => {
     // console.warn('options', options);
     try {
